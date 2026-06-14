@@ -4,153 +4,93 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#1d9bf0" />
-    <meta name="description" content="Manage your Bluesky account and mass-follow users via the AT Protocol." />
+    <meta name="description" content="Manage multiple Bluesky accounts and mass-follow another profile's followers via the AT Protocol." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icon.svg" />
     <title>Bluesky Manager</title>
   </head>
   <body>
-    <!-- ============================ LOGIN VIEW ============================ -->
-    <section id="login-view" class="login-view">
-      <div class="login-card">
-        <div class="brand">
-          <div class="brand-logo">B</div>
-          <div>
-            <h1>Bluesky Manager</h1>
-            <p class="muted">Manage your account &amp; mass-follow via the AT Protocol</p>
-          </div>
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo">B</div>
+        <div>
+          <h1>Bluesky Manager</h1>
+          <p class="muted small">Mass-follow another profile's followers across multiple accounts</p>
         </div>
-
-        <form id="login-form" autocomplete="off">
-          <label for="service">Service</label>
-          <input id="service" type="text" value="https://bsky.social" spellcheck="false" />
-
-          <label for="identifier">Handle or email</label>
-          <input id="identifier" type="text" placeholder="handle.bsky.social" spellcheck="false" autocapitalize="none" />
-
-          <label for="password">App password</label>
-          <input id="password" type="password" placeholder="xxxx-xxxx-xxxx-xxxx" />
-          <p class="hint">
-            Use an <strong>App Password</strong> (Settings &rarr; App Passwords in Bluesky),
-            not your main password.
-          </p>
-
-          <label class="checkbox">
-            <input id="remember" type="checkbox" />
-            <span>Stay signed in on this device</span>
-          </label>
-
-          <button type="submit" id="login-btn" class="btn primary full">Sign in</button>
-          <div id="login-error" class="error-box hidden"></div>
-        </form>
       </div>
+      <button id="add-account" class="btn">+ Add account</button>
+    </header>
+
+    <section class="settings-bar">
+      <label class="field">
+        <span>Service</span>
+        <input id="set-service" type="text" value="https://bsky.social" spellcheck="false" />
+      </label>
+      <label class="field">
+        <span>Source</span>
+        <select id="set-type">
+          <option value="followers">Target's followers</option>
+          <option value="follows">Who target follows</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Max to fetch</span>
+        <input id="set-max" type="number" value="1000" min="1" max="25000" />
+      </label>
+      <label class="field">
+        <span>Delay (ms)</span>
+        <input id="set-delay" type="number" value="1200" min="0" max="60000" />
+      </label>
+      <label class="checkbox">
+        <input id="set-skip" type="checkbox" checked />
+        <span>Skip already-followed</span>
+      </label>
     </section>
 
-    <!-- ============================ APP VIEW ============================ -->
-    <section id="app-view" class="app-view hidden">
-      <header class="topbar">
-        <div class="account">
-          <img id="acct-avatar" class="avatar" alt="" />
-          <div class="account-meta">
-            <span id="acct-name" class="acct-name"></span>
-            <span id="acct-handle" class="muted small"></span>
-          </div>
-        </div>
-        <div class="account-stats">
-          <div><strong id="stat-followers">0</strong><span class="muted small">followers</span></div>
-          <div><strong id="stat-follows">0</strong><span class="muted small">following</span></div>
-          <div><strong id="stat-posts">0</strong><span class="muted small">posts</span></div>
-        </div>
-        <button id="logout-btn" class="btn ghost">Sign out</button>
-      </header>
+    <main id="accounts" class="accounts"></main>
 
-      <main class="layout">
-        <!-- Left: build the target list -->
-        <div class="panel">
-          <h2>Build your follow list</h2>
+    <footer class="run-bar">
+      <div id="global-summary" class="muted small">No accounts running.</div>
+      <div class="run-actions">
+        <button id="clear-all" class="btn tiny danger">Remove all</button>
+        <button id="start-all" class="btn primary">Start all</button>
+        <button id="stop-all" class="btn danger hidden">Stop all</button>
+      </div>
+    </footer>
 
-          <div class="tabs" id="source-tabs">
-            <button class="tab active" data-tab="paste">Paste handles</button>
-            <button class="tab" data-tab="connections">From an account</button>
-            <button class="tab" data-tab="search">Search</button>
-          </div>
+    <p class="disclaimer">
+      Credentials are stored only in this browser (<code>localStorage</code>) on your device. Use a revocable
+      <strong>App Password</strong> (Bluesky &rarr; Settings &rarr; App Passwords), not your main password.
+    </p>
 
-          <!-- Paste -->
-          <div class="tab-panel" data-panel="paste">
-            <p class="muted small">One handle, DID, or profile URL per line.</p>
-            <textarea id="paste-input" rows="8" placeholder="alice.bsky.social&#10;@bob.bsky.social&#10;https://bsky.app/profile/carol.bsky.social&#10;did:plc:..."></textarea>
-            <button id="paste-add" class="btn">Resolve &amp; add</button>
-          </div>
-
-          <!-- Connections -->
-          <div class="tab-panel hidden" data-panel="connections">
-            <p class="muted small">Pull the followers or following list of any account.</p>
-            <input id="conn-actor" type="text" placeholder="target.bsky.social" spellcheck="false" autocapitalize="none" />
-            <div class="row">
-              <select id="conn-type">
-                <option value="followers">Their followers</option>
-                <option value="follows">Who they follow</option>
-              </select>
-              <input id="conn-max" type="number" value="500" min="1" max="10000" title="Max users to fetch" />
-            </div>
-            <button id="conn-fetch" class="btn">Fetch &amp; add</button>
-          </div>
-
-          <!-- Search -->
-          <div class="tab-panel hidden" data-panel="search">
-            <p class="muted small">Search Bluesky users by name or keyword.</p>
-            <input id="search-input" type="text" placeholder="e.g. designer" spellcheck="false" />
-            <input id="search-max" type="number" value="50" min="1" max="1000" title="Max results" />
-            <button id="search-go" class="btn">Search &amp; add</button>
-          </div>
-
-          <div id="source-status" class="status-line"></div>
-        </div>
-
-        <!-- Right: review + run -->
-        <div class="panel">
-          <div class="panel-head">
-            <h2>Targets <span id="target-count" class="badge">0</span></h2>
-            <div class="head-actions">
-              <button id="select-all" class="btn tiny">Select all</button>
-              <button id="select-none" class="btn tiny">None</button>
-              <button id="clear-targets" class="btn tiny danger">Clear</button>
-            </div>
-          </div>
-
-          <label class="checkbox small">
-            <input id="hide-following" type="checkbox" checked />
-            <span>Skip people I already follow</span>
+    <!-- Account card template -->
+    <template id="account-template">
+      <div class="account-card">
+        <div class="ac-inputs">
+          <label class="field">
+            <span>Handle or email</span>
+            <input class="ac-id" type="text" placeholder="account.bsky.social" spellcheck="false" autocapitalize="none" />
           </label>
-
-          <div id="target-list" class="target-list">
-            <p class="empty-state">No targets yet. Add some from the left panel.</p>
-          </div>
-
-          <div class="run-controls">
-            <div class="row">
-              <label class="inline">
-                Delay
-                <input id="delay-input" type="number" value="1200" min="0" max="60000" />
-                <span class="muted small">ms</span>
-              </label>
-              <span id="run-selected" class="muted small">0 selected</span>
-            </div>
-            <div class="row">
-              <button id="follow-btn" class="btn primary full">Follow selected</button>
-              <button id="stop-btn" class="btn danger hidden">Stop</button>
-            </div>
-          </div>
-
-          <div id="progress-wrap" class="progress-wrap hidden">
-            <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
-            <div id="progress-text" class="muted small"></div>
-          </div>
-
-          <div id="run-log" class="run-log hidden"></div>
+          <label class="field">
+            <span>App password</span>
+            <input class="ac-pw" type="password" placeholder="xxxx-xxxx-xxxx-xxxx" />
+          </label>
+          <label class="field">
+            <span>Copy followers from</span>
+            <input class="ac-target" type="text" placeholder="target-profile.bsky.social" spellcheck="false" autocapitalize="none" />
+          </label>
+          <button class="ac-remove" title="Remove account">&times;</button>
         </div>
-      </main>
-    </section>
+        <div class="ac-statusbar">
+          <span class="ac-dot"></span>
+          <span class="ac-state">Idle</span>
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <span class="ac-counts muted small"></span>
+          <button class="ac-log-toggle btn tiny">Log</button>
+        </div>
+        <div class="ac-log hidden"></div>
+      </div>
+    </template>
 
     <script type="module" src="/src/main.js"></script>
   </body>
