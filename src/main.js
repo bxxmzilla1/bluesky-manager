@@ -96,8 +96,7 @@ function addAccount(data = {}) {
     state: tpl.querySelector('.ac-state'),
     fill: tpl.querySelector('.progress-fill'),
     counts: tpl.querySelector('.ac-counts'),
-    logToggle: tpl.querySelector('.ac-log-toggle'),
-    log: tpl.querySelector('.ac-log'),
+    live: tpl.querySelector('.ac-live'),
   };
   refs.id.value = data.identifier || '';
   refs.pw.value = data.password || '';
@@ -117,10 +116,6 @@ function addAccount(data = {}) {
     tpl.remove();
     saveAccounts();
     updateGlobalSummary();
-  });
-
-  refs.logToggle.addEventListener('click', () => {
-    refs.log.classList.toggle('hidden');
   });
 
   $('accounts').appendChild(tpl);
@@ -144,14 +139,10 @@ function setCardCounts(acct, r) {
     (r.total ? ` / ${r.total}` : '');
 }
 
-function logLine(acct, d) {
-  const line = document.createElement('div');
-  line.className = 'log-line';
-  if (d.status === 'followed') { line.classList.add('log-ok'); line.textContent = `✓ followed @${d.label}`; }
-  else if (d.status === 'skipped') { line.classList.add('log-skip'); line.textContent = `– skipped @${d.label}`; }
-  else { line.classList.add('log-err'); line.textContent = `✗ @${d.label}: ${d.message || 'failed'}`; }
-  acct.refs.log.appendChild(line);
-  acct.refs.log.scrollTop = acct.refs.log.scrollHeight;
+// Show only the most recently followed account, in green, updated live.
+function setLive(acct, d) {
+  if (d.status !== 'followed') return;
+  acct.refs.live.textContent = `✓ followed @${d.label}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -187,8 +178,7 @@ async function startAll() {
     jobs.map((acct) => {
       acct.cancel = false;
       acct.running = true;
-      acct.refs.log.innerHTML = '';
-      acct.refs.log.classList.remove('hidden');
+      acct.refs.live.textContent = '';
       setCardProgress(acct, 0, 1);
       setCardState(acct, 'auth', 'Starting…');
 
@@ -211,7 +201,7 @@ async function startAll() {
           onProgress: (d) => {
             setCardProgress(acct, d.done, d.total);
             setCardCounts(acct, d);
-            logLine(acct, d);
+            setLive(acct, d);
             updateGlobalSummary();
           },
           shouldCancel: () => acct.cancel,
