@@ -50,7 +50,10 @@ function saveSettings() {
     service: $('set-service').value,
     type: $('set-type').value,
     max: $('set-max').value,
+    delayMode: $('set-delay-mode').value,
     delay: $('set-delay').value,
+    delayMin: $('set-delay-min').value,
+    delayMax: $('set-delay-max').value,
     skip: $('set-skip').checked,
   };
   try { localStorage.setItem(LS_SETTINGS, JSON.stringify(s)); } catch { /* ignore */ }
@@ -63,9 +66,20 @@ function loadSettings() {
     if (s.service) $('set-service').value = s.service;
     if (s.type) $('set-type').value = s.type;
     if (s.max) $('set-max').value = s.max;
+    if (s.delayMode) $('set-delay-mode').value = s.delayMode;
     if (s.delay != null) $('set-delay').value = s.delay;
+    if (s.delayMin != null) $('set-delay-min').value = s.delayMin;
+    if (s.delayMax != null) $('set-delay-max').value = s.delayMax;
     $('set-skip').checked = s.skip !== false;
   } catch { /* ignore */ }
+}
+
+// Show fixed-delay field or min/max range depending on the chosen mode.
+function syncDelayMode() {
+  const random = $('set-delay-mode').value === 'random';
+  $('field-fixed').classList.toggle('hidden', random);
+  $('field-min').classList.toggle('hidden', !random);
+  $('field-max').classList.toggle('hidden', !random);
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +164,10 @@ async function startAll() {
     service: $('set-service').value.trim(),
     type: $('set-type').value,
     maxFollowers: $('set-max').value,
+    delayMode: $('set-delay-mode').value,
     delayMs: $('set-delay').value,
+    delayMin: $('set-delay-min').value,
+    delayMax: $('set-delay-max').value,
     skipExisting: $('set-skip').checked,
   };
 
@@ -183,7 +200,10 @@ async function startAll() {
           target: acct.refs.target.value,
           type: settings.type,
           maxFollowers: settings.maxFollowers,
+          delayMode: settings.delayMode,
           delayMs: settings.delayMs,
+          delayMin: settings.delayMin,
+          delayMax: settings.delayMax,
           skipExisting: settings.skipExisting,
         },
         {
@@ -269,9 +289,11 @@ $('clear-all').addEventListener('click', () => {
 document.querySelectorAll('.settings-bar input, .settings-bar select').forEach((e) =>
   e.addEventListener('change', saveSettings)
 );
+$('set-delay-mode').addEventListener('change', syncDelayMode);
 
 function init() {
   loadSettings();
+  syncDelayMode();
   const saved = loadAccounts();
   if (saved.length) saved.forEach((a) => addAccount(a));
   else addAccount();

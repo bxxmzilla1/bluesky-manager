@@ -22,24 +22,39 @@
     </header>
 
     <section class="settings-bar">
-      <label class="field">
+      <label class="field svc">
         <span>Service</span>
         <input id="set-service" type="text" value="https://bsky.social" spellcheck="false" />
       </label>
-      <label class="field">
+      <label class="field md">
         <span>Source</span>
         <select id="set-type">
           <option value="followers">Target's followers</option>
           <option value="follows">Who target follows</option>
         </select>
       </label>
-      <label class="field">
+      <label class="field sm">
         <span>Max to fetch</span>
         <input id="set-max" type="number" value="1000" min="1" max="25000" />
       </label>
-      <label class="field">
+      <label class="field sm">
+        <span>Delay mode</span>
+        <select id="set-delay-mode">
+          <option value="fixed">Fixed</option>
+          <option value="random">Random range</option>
+        </select>
+      </label>
+      <label class="field sm" id="field-fixed">
         <span>Delay (ms)</span>
         <input id="set-delay" type="number" value="1200" min="0" max="60000" />
+      </label>
+      <label class="field sm hidden" id="field-min">
+        <span>Min (ms)</span>
+        <input id="set-delay-min" type="number" value="800" min="0" max="60000" />
+      </label>
+      <label class="field sm hidden" id="field-max">
+        <span>Max (ms)</span>
+        <input id="set-delay-max" type="number" value="2500" min="0" max="60000" />
       </label>
       <label class="checkbox">
         <input id="set-skip" type="checkbox" checked />

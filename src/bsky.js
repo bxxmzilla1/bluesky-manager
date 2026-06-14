@@ -74,7 +74,10 @@ export async function runAccountJob(cfg, hooks = {}) {
     target,
     type = 'followers',
     maxFollowers,
+    delayMode = 'fixed',
     delayMs,
+    delayMin,
+    delayMax,
     skipExisting = true,
   } = cfg;
   const onStatus = hooks.onStatus || (() => {});
@@ -106,8 +109,20 @@ export async function runAccountJob(cfg, hooks = {}) {
       return { ok: true, result };
     }
 
-    const delay = Math.min(Math.max(parseInt(delayMs, 10) || 1000, 0), 60000);
-    onStatus('run', `Following ${users.length} ${type}…`);
+    // Per-follow delay. In random mode each account draws an independent
+    // value within [min, max] for every follow, so no two accounts stay in sync.
+    const clamp = (v, d) => Math.min(Math.max(parseInt(v, 10) || d, 0), 60000);
+    let lo = clamp(delayMin, 800);
+    let hi = clamp(delayMax, 2500);
+    if (lo > hi) [lo, hi] = [hi, lo];
+    const fixed = clamp(delayMs, 1000);
+    const nextDelay = () =>
+      delayMode === 'random' ? lo + Math.floor(Math.random() * (hi - lo + 1)) : fixed;
+
+    onStatus(
+      'run',
+      `Following ${users.length} ${type} (${delayMode === 'random' ? `${lo}-${hi}ms` : `${fixed}ms`})…`
+    );
 
     for (let i = 0; i < users.length; i++) {
       if (shouldCancel()) {
@@ -131,10 +146,13 @@ export async function runAccountJob(cfg, hooks = {}) {
         result.failed++;
         const msg = parseError(err);
         onProgress({ done: i + 1, total: users.length, status: 'error', label, message: msg, ...result });
-        if (/rate ?limit/i.test(msg)) await sleep(Math.max(delay, 5000));
+        if (/rate ?limit/i.test(msg)) await sleep(Math.max(nextDelay(), 5000));
       }
 
-      if (i < users.length - 1 && delay > 0 && !shouldCancel()) await sleep(delay);
+      if (i < users.length - 1 && !shouldCancel()) {
+        const d = nextDelay();
+        if (d > 0) await sleep(d);
+      }
     }
 
     onStatus('done', result.cancelled ? 'Stopped' : 'Done');
