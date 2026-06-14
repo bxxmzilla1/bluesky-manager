@@ -1,0 +1,19 @@
+{
+  "name": "bluesky-manager",
+  "version": "2.0.0",
+  "private": true,
+  "description": "A PWA to manage a Bluesky account and mass-follow users via the AT Protocol API.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.13.35"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10",
+    "vite-plugin-pwa": "^0.20.5"
+  }
+}
